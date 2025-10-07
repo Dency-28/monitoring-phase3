@@ -1,0 +1,17 @@
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore SSH keys and certificates
+*.pem
+*.key
+*.crt
+
+# Ignore Ansible retry files
+*.retry
+
+# Ignore auto-generated inventory
+inventory.ini
+
+# Logs
+*.log

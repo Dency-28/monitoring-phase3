@@ -1,0 +1,26 @@
+---
+- name: Monitor Application Health
+  hosts: all
+  become: false
+
+  tasks:
+    - name: Ping EC2 to verify connectivity
+      ping:
+
+    - name: Check NGINX status
+      shell: systemctl is-active nginx
+      register: nginx_status
+      changed_when: false
+
+    - name: Show NGINX status
+      debug:
+        msg: "NGINX is {{ nginx_status.stdout }}"
+
+    - name: Check Docker container statuses
+      shell: docker ps --format "{{.Names}}: {{.Status}}"
+      register: docker_containers
+      changed_when: false
+
+    - name: Show running containers
+      debug:
+        var: docker_containers.stdout_lines

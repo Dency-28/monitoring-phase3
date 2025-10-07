@@ -1,0 +1,45 @@
+name: Monitoring Pipeline
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *"  # Runs every 6 hours
+
+jobs:
+  monitor:
+    name: Monitor EC2 and Application Health
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout repo
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2️⃣ Setup SSH (from GitHub secret)
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOYER_PEM }}" > ~/.ssh/deployer.pem
+          chmod 600 ~/.ssh/deployer.pem
+
+      # 3️⃣ Install dependencies
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y ansible curl jq unzip
+
+      # 4️⃣ Update inventory dynamically (auto-fetch EC2 IP)
+      - name: Update inventory from Terraform
+        run: bash Scripts/update_inventory.sh
+
+      # 5️⃣ Display inventory for verification
+      - name: Show inventory
+        run: cat inventory.ini
+
+      # 6️⃣ Run Ansible Monitoring Playbook
+      - name: Run Ansible Monitoring Playbook
+        run: ansible-playbook -i inventory.ini Playbooks/monitoring.yml
+
+      # 7️⃣ Run Health Check Script
+      - name: Run Health Check Script
+        run: bash Scripts/check_health.sh

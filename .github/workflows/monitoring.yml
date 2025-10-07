@@ -3,43 +3,45 @@ name: Monitoring Pipeline
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */6 * * *"  # Runs every 6 hours
+    - cron: "0 */6 * * *"  # runs every 6 hours
 
 jobs:
   monitor:
-    name: Monitor EC2 and Application Health
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repo
-      - name: Checkout code
+      # 1️⃣ Checkout monitoring repo (this repo)
+      - name: Checkout monitoring repo
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup SSH (from GitHub secret)
+      # 2️⃣ Checkout Terraform repo (Tf-den)
+      - name: Checkout Terraform repo
+        uses: actions/checkout@v4
+        with:
+          repository: Dency-28/Tf-den
+          path: Tf-den
+
+      # 3️⃣ Set up SSH key for EC2
       - name: Set up SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOYER_PEM }}" > ~/.ssh/deployer.pem
+          echo "${{ secrets.DEPLOYER_NEW }}" > ~/.ssh/deployer.pem
           chmod 600 ~/.ssh/deployer.pem
 
-      # 3️⃣ Install dependencies
+      # 4️⃣ Install dependencies
       - name: Install dependencies
         run: |
           sudo apt update
           sudo apt install -y ansible curl jq unzip
 
-      # 4️⃣ Update inventory dynamically (auto-fetch EC2 IP)
-      - name: Update inventory from Terraform
+      # 5️⃣ Update inventory from Terraform output
+      - name: Update Ansible Inventory
         run: bash Scripts/update_inventory.sh
 
-      # 5️⃣ Display inventory for verification
-      - name: Show inventory
-        run: cat inventory.ini
-
-      # 6️⃣ Run Ansible Monitoring Playbook
-      - name: Run Ansible Monitoring Playbook
+      # 6️⃣ Run Ansible monitoring playbook
+      - name: Run Monitoring Playbook
         run: ansible-playbook -i inventory.ini Playbooks/monitoring.yml
 
       # 7️⃣ Run Health Check Script
-      - name: Run Health Check Script
+      - name: Run Health Check
         run: bash Scripts/check_health.sh
